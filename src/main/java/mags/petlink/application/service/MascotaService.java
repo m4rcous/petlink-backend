@@ -1,5 +1,6 @@
 package mags.petlink.application.service;
 
+import mags.petlink.api.dto.response.MascotaResponse;
 import mags.petlink.domain.enums.EstadoCollar;
 import mags.petlink.domain.enums.EstadoSalud;
 import mags.petlink.domain.model.Collar;
@@ -9,7 +10,10 @@ import mags.petlink.infrastructure.repository.CollarRepository;
 import mags.petlink.infrastructure.repository.HistorialLatidosRepository;
 import mags.petlink.infrastructure.repository.MascotaRepository;
 import mags.petlink.shared.exception.NotFoundException;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import java.time.LocalTime;
 import java.util.Comparator;
@@ -99,5 +103,9 @@ public class MascotaService {
         }
 
         return mascotaRepository.save(mascota);
+    }
+
+     public List<Mascota> listarTodas() {
+        return mascotaRepository.findAll();
     }
 }

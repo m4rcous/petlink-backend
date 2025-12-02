@@ -30,6 +30,15 @@ public class MascotaController {
         this.historialLatidosService = historialLatidosService;
     }
 
+
+    @GetMapping
+    public ResponseEntity<List<MascotaResponse>> listarMascotas() {
+        List<MascotaResponse> mascotas = mascotaService.listarTodas().stream()
+                .map(this::toMascotaResponse)
+                .toList();
+        return ResponseEntity.ok(mascotas);
+    }
+    
     @PostMapping
     public ResponseEntity<MascotaResponse> crearMascota(@RequestBody MascotaCreateRequest request) {
         String textoHora = request.horaIngresa();
@@ -153,9 +162,12 @@ public class MascotaController {
     }
 
     private HistorialLatidosResponse toHistorialResponse(HistorialLatidos h) {
+
         return new HistorialLatidosResponse(
                 h.getTiempo().toString(),
                 h.getBpm()
         );
     }
+
+
 }
