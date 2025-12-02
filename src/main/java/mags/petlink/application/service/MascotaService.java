@@ -1,39 +1,70 @@
 package mags.petlink.application.service;
 
 import mags.petlink.domain.enums.EstadoCollar;
+import mags.petlink.domain.enums.EstadoSalud;
 import mags.petlink.domain.model.Collar;
+import mags.petlink.domain.model.HistorialLatidos;
 import mags.petlink.domain.model.Mascota;
 import mags.petlink.infrastructure.repository.CollarRepository;
+import mags.petlink.infrastructure.repository.HistorialLatidosRepository;
 import mags.petlink.infrastructure.repository.MascotaRepository;
 import mags.petlink.shared.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Service
 public class MascotaService {
 
     private final MascotaRepository mascotaRepository;
     private final CollarRepository collarRepository;
+    private final HistorialLatidosRepository historialLatidosRepository;
 
     public MascotaService(MascotaRepository mascotaRepository,
-                          CollarRepository collarRepository) {
+                          CollarRepository collarRepository,
+                          HistorialLatidosRepository historialLatidosRepository) {
         this.mascotaRepository = mascotaRepository;
         this.collarRepository = collarRepository;
+        this.historialLatidosRepository = historialLatidosRepository;
     }
 
-    public Mascota crearMascota(String nombre, LocalTime horaIngresa) {
+    public Mascota crearMascota(String nombre, String especie, Integer edad, EstadoSalud estadoSalud, String raza, LocalTime horaIngresa) {
+
         Mascota mascota = Mascota.builder()
                 .nombre(nombre)
+                .especie(especie)
+                .edad(edad)
+                .estadoSalud(estadoSalud != null ? estadoSalud : EstadoSalud.ESTABLE)
+                .raza(raza)
                 .horaIngresa(horaIngresa)
-                .internado(false)
                 .build();
+
         return mascotaRepository.save(mascota);
+    }
+
+    public Mascota obtenerMascota(Long id) {
+        return mascotaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Mascota no encontrada con id " + id));
     }
 
     public Mascota obtenerPorId(Long id) {
         return mascotaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Mascota no encontrada con id " + id));
+    }
+
+    public List<Integer> obtenerUltimosSeisBpm(Long mascotaId) {
+        Mascota mascota = obtenerMascota(mascotaId);
+
+        List<HistorialLatidos> registrosDesc =
+                historialLatidosRepository.findTop6ByMascotaOrderByTiempoDesc(mascota);
+
+        // los tenemos del más reciente al más antiguo, invertimos para dejarlos de más antiguo → más reciente
+        return registrosDesc.stream()
+                .sorted(Comparator.comparing(HistorialLatidos::getTiempo))
+                .map(HistorialLatidos::getBpm)
+                .toList();
     }
 
     public Mascota cambiarEstadoInternado(Long mascotaId, boolean internado) {

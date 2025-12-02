@@ -2,6 +2,7 @@ package mags.petlink.domain.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import mags.petlink.domain.enums.EstadoSalud;
 
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -20,8 +21,16 @@ public class Mascota {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre", nullable = false)
     private String nombre;
+
+    private String especie;
+
+    private Integer edad;
+
+    @Enumerated(EnumType.STRING)
+    private EstadoSalud estadoSalud;
+
+    private String raza;
 
     @Column(name = "hora_ingresa", nullable = false)
     private LocalTime horaIngresa;

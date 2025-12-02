@@ -33,6 +33,14 @@ public class SensorService {
         // 2. Solo guardar historial si el collar está vinculado a una mascota internada
         Mascota mascota = collar.getMascota();
         if (mascota != null && mascota.isInternado()) {
+
+            // 💡 Limitar a 6 registros
+            long count = historialLatidosRepository.countByMascota(mascota);
+            if (count >= 6) {
+                historialLatidosRepository.findFirstByMascotaOrderByTiempoAsc(mascota)
+                        .ifPresent(historialLatidosRepository::delete);
+            }
+
             HistorialLatidos registro = HistorialLatidos.builder()
                     .mascota(mascota)
                     .tiempo(Instant.parse(request.timestamp()))

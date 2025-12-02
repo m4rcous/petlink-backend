@@ -3,14 +3,17 @@ package mags.petlink.api.controller;
 import mags.petlink.api.dto.request.CambiarInternadoRequest;
 import mags.petlink.api.dto.request.MascotaCreateRequest;
 import mags.petlink.api.dto.response.HistorialLatidosResponse;
+import mags.petlink.api.dto.response.MascotaMonitorResponse;
 import mags.petlink.api.dto.response.MascotaResponse;
 import mags.petlink.application.service.HistorialLatidosService;
 import mags.petlink.application.service.MascotaService;
 import mags.petlink.domain.model.HistorialLatidos;
 import mags.petlink.domain.model.Mascota;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -29,9 +32,76 @@ public class MascotaController {
 
     @PostMapping
     public ResponseEntity<MascotaResponse> crearMascota(@RequestBody MascotaCreateRequest request) {
-        LocalTime hora = LocalTime.parse(request.horaIngresa()); // "HH:mm:ss"
-        Mascota mascota = mascotaService.crearMascota(request.nombre(), hora);
-        return ResponseEntity.ok(toMascotaResponse(mascota));
+        String textoHora = request.horaIngresa();
+        LocalTime hora;
+
+        if (textoHora != null && textoHora.contains("T")) {
+            // Por si algún día mandas "2025-12-02T12:00:00"
+            hora = java.time.LocalDateTime.parse(textoHora).toLocalTime();
+        } else {
+            // "12:00" o "12:00:00"
+            hora = java.time.LocalTime.parse(textoHora);
+        }
+
+        Mascota mascota = mascotaService.crearMascota(
+                request.nombre(),
+                request.especie(),
+                request.edad(),
+                request.estadoSalud(),
+                request.raza(),
+                hora
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(mascota));
+    }
+
+    @GetMapping("/{id}/monitor")
+    public ResponseEntity<MascotaMonitorResponse> monitorMascota(@PathVariable Long id) {
+        Mascota mascota = mascotaService.obtenerMascota(id);
+        List<Integer> lastSix = mascotaService.obtenerUltimosSeisBpm(id);
+
+        Integer currentHeartRate = lastSix.isEmpty()
+                ? null
+                : lastSix.get(lastSix.size() - 1);
+
+        MascotaMonitorResponse response = new MascotaMonitorResponse(
+                mascota.getNombre(),
+                mascota.getEdad(),
+                mascota.getRaza(),
+                mascota.getHoraIngresa() != null ? mascota.getHoraIngresa().toString() : null,
+                currentHeartRate,
+                mascota.getEstadoSalud() != null ? mascota.getEstadoSalud().name() : null,
+                lastSix
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    private MascotaResponse toResponse(Mascota mascota) {
+        Long collarId = mascota.getCollar() != null ? mascota.getCollar().getId() : null;
+
+        return new MascotaResponse(
+                mascota.getId(),
+                mascota.getNombre(),
+                mascota.getEspecie(),
+                mascota.getEdad(),
+                mascota.getEstadoSalud() != null ? mascota.getEstadoSalud().name() : null,
+                mascota.getRaza(),
+                mascota.isInternado(),
+                mascota.getHoraIngresa() != null ? mascota.getHoraIngresa().toString() : null,
+                collarId
+        );
+    }
+
+    private LocalTime parseHora(String textoHora) {
+        if (textoHora == null || textoHora.isBlank()) {
+            return null;
+        }
+        if (textoHora.contains("T")) {
+            // ej: 2025-12-02T12:00:00
+            return LocalDateTime.parse(textoHora).toLocalTime();
+        }
+        // ej: 12:00 o 12:00:00
+        return LocalTime.parse(textoHora);
     }
 
     @PutMapping("/{id}/internado")
@@ -72,15 +142,19 @@ public class MascotaController {
         return new MascotaResponse(
                 mascota.getId(),
                 mascota.getNombre(),
-                mascota.getHoraIngresa().toString(),
+                mascota.getEspecie(),
+                mascota.getEdad(),
+                mascota.getEstadoSalud() != null ? mascota.getEstadoSalud().name() : null,
+                mascota.getRaza(),
                 mascota.isInternado(),
+                mascota.getHoraIngresa() != null ? mascota.getHoraIngresa().toString() : null,
                 collarId
         );
     }
 
     private HistorialLatidosResponse toHistorialResponse(HistorialLatidos h) {
         return new HistorialLatidosResponse(
-                h.getTiempo().toString(), // Instant -> ISO
+                h.getTiempo().toString(),
                 h.getBpm()
         );
     }
