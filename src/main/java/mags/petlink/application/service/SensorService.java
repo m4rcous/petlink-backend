@@ -26,15 +26,12 @@ public class SensorService {
     public void procesarLectura(SensorDataRequest request) {
         String code = request.device_id();
 
-        // 1. Buscar o crear collar
         Collar collar = collarRepository.findByCode(code)
                 .orElseGet(() -> crearNuevoCollar(code));
 
-        // 2. Solo guardar historial si el collar está vinculado a una mascota internada
         Mascota mascota = collar.getMascota();
         if (mascota != null && mascota.isInternado()) {
 
-            // 💡 Limitar a 6 registros
             long count = historialLatidosRepository.countByMascota(mascota);
             if (count >= 6) {
                 historialLatidosRepository.findFirstByMascotaOrderByTiempoAsc(mascota)

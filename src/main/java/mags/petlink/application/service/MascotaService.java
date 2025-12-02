@@ -60,7 +60,6 @@ public class MascotaService {
         List<HistorialLatidos> registrosDesc =
                 historialLatidosRepository.findTop6ByMascotaOrderByTiempoDesc(mascota);
 
-        // los tenemos del más reciente al más antiguo, invertimos para dejarlos de más antiguo → más reciente
         return registrosDesc.stream()
                 .sorted(Comparator.comparing(HistorialLatidos::getTiempo))
                 .map(HistorialLatidos::getBpm)

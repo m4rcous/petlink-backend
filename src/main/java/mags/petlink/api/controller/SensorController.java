@@ -20,6 +20,6 @@ public class SensorController {
     @PostMapping("/heartbeat")
     public ResponseEntity<Void> recibirLatido(@RequestBody SensorDataRequest request) {
         sensorService.procesarLectura(request);
-        return ResponseEntity.accepted().build(); // 202 Accepted
+        return ResponseEntity.accepted().build();
     }
 }
